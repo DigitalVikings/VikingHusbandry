@@ -2,10 +2,9 @@
 
 **VikingHusbandry** transforms Valheim's animal domestication and companion systems with active rodeo subdual, 4-state tactical companion stances, chest-to-trough conversion, and anti-chute paddock density control with 100% save-file reversibility.
 
-![VikingHusbandry Rodeo Subdual & Troughs](screenshot_husbandry_rodeo.png)
+![Newly Tamed Companion](https://raw.githubusercontent.com/DigitalVikings/VikingHusbandry/main/newly_tamed.png)
 
-> [!WARNING]
-> **Work in Progress (Pre-Release v0.1.0)**: This mod is in active development and has not been tested extensively. Features, balance, and mechanics may change, and unintended bugs or edge cases may occur. Backup your character and world saves before testing.
+> ⚠️ **Work in Progress (Pre-Release v0.1.0)**: This mod is in active development and has not been tested extensively. Features, balance, and mechanics may change, and unintended bugs or edge cases may occur. Backup your character and world saves before testing.
 
 ---
 
