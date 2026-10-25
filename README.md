@@ -4,7 +4,7 @@
 
 ![Newly Tamed Companion](https://raw.githubusercontent.com/DigitalVikings/VikingHusbandry/main/newly_tamed.png)
 
-> ⚠️ **Work in Progress (Pre-Release v0.1.0)**: This mod is in active development and has not been tested extensively. Features, balance, and mechanics may change, and unintended bugs or edge cases may occur. Backup your character and world saves before testing.
+> ⚠️ **Work in Progress (Pre-Release v0.2.0)**: This mod is in active development and has not been tested extensively. Features, balance, and mechanics may change, and unintended bugs or edge cases may occur. Backup your character and world saves before testing.
 
 ---
 
@@ -12,9 +12,9 @@
 
 Animal handling is elevated from passive pit-crouching to responsive, skill-based interactions:
 
-- **Active Rodeo Subdual**: Parrying a wild creature or sneaking undetected creates a grapple opening. Press **`[E]`** on the staggered or unalerted beast to mount its back. Weather the thrashing struggle (10 stamina/sec) to fill the subdual bar. At 100%, the creature collapses into a 20-second **Downed State**—press an active hotbar key (1–8) with favored food to feed it directly and achieve **100% Tamed** in a single encounter.
+- **Active Rodeo Subdual**: Parrying a wild creature or sneaking undetected creates a grapple opening. Press **`[E]`** on the staggered or unalerted beast to mount its back. Cling tightly to its scruff as it weaves, thrashes, and bucks violently (10 stamina/sec) to fill the subdual bar. At 100%, the creature collapses into a 20-second **Downed State**—press an active hotbar key (1–8) with favored food to feed it directly and achieve **100% Tamed** in a single encounter.
 - **Tactical 4-State Companion Stances**: Interacting with any tamed companion (including commanded Boars) cycles through 4 behavioral stances: *Follow (Aggressive)*, *Follow (Passive / Heel)*, *Stay (Guard Area)*, and *Stay (Passive / Pen)*.
-- **Chest-to-Trough Conversion**: Press **`Shift + E`** on any standard wooden chest to toggle it into a livestock **Feeding Trough**. Livestock within 20m path directly to the trough to feed, preventing food despawns and ground clipping without introducing custom prefabs.
+- **Dynamic 3D Feeding Troughs**: Press **`Shift + E`** on any standard wooden chest to toggle it into a livestock **Feeding Trough**. The chest dynamically transforms into an open 3D timber manger with a straw feed mound that rises as food is stored. Livestock within 20m path directly to the trough to feed, preventing food despawns and ground clipping without introducing custom prefabs or risking save corruption.
 - **Anti-Chute Paddock Limits**: Breeding limits evaluate density using horizontal ground distance only, rendering vertical breeding chutes obsolete.
 
 <details>

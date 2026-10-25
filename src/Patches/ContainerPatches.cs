@@ -12,9 +12,20 @@ namespace VikingHusbandry.Patches
         [HarmonyPostfix]
         public static void Awake_Postfix(Container __instance)
         {
-            if (__instance != null && TroughRegistry.IsValidChest(__instance))
+            if (__instance != null && __instance.GetComponentInParent<Piece>() != null && TroughRegistry.IsValidChest(__instance))
             {
                 TroughRegistry.Register(__instance);
+                TroughVisualizer.EnsureAttached(__instance);
+            }
+        }
+
+        [HarmonyPatch("UpdateUseVisual")]
+        [HarmonyPostfix]
+        public static void UpdateUseVisual_Postfix(Container __instance)
+        {
+            if (__instance != null && TroughRegistry.IsTrough(__instance))
+            {
+                TroughVisualizer.Get(__instance)?.EnsureChestRenderersHidden();
             }
         }
 

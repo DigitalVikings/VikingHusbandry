@@ -15,6 +15,9 @@ namespace VikingHusbandry.Features.Rodeo
         private float _thrashTimer;
         private float _lastProgressUpdateTimer;
         private int _lastPercentShown = -1;
+        private Vector3 _baseLocalPos;
+        private float _basePitch;
+        private float _buckImpulse;
 
         public bool IsRodeoActive => _player != null && _beast != null;
 
@@ -45,6 +48,7 @@ namespace VikingHusbandry.Features.Rodeo
             _thrashTimer = 0f;
             _lastProgressUpdateTimer = 0f;
             _lastPercentShown = -1;
+            _buckImpulse = 0f;
 
             // Clean any previous mount point
             if (_tempMountPoint != null)
@@ -56,25 +60,41 @@ namespace VikingHusbandry.Features.Rodeo
             _tempMountPoint = new GameObject("VH_MountPoint");
             _tempMountPoint.transform.SetParent(beast.transform);
 
+            bool isBoar = beast.name.StartsWith("Boar") || (beast.m_name != null && beast.m_name.ToLower().Contains("boar"));
+            string attachAnim = isBoar ? "attach_dragon" : "attach_chair";
+            _basePitch = isBoar ? 34f : 0f;
+
             float mountHeight = 0.7f;
+            float mountZ = -0.1f;
             CapsuleCollider col = beast.GetCollider();
             if (col != null)
             {
-                mountHeight = Mathf.Max(0.55f, col.height * 0.65f);
+                if (isBoar)
+                {
+                    mountHeight = Mathf.Max(0.42f, col.height * 0.52f);
+                    mountZ = -0.22f;
+                }
+                else
+                {
+                    mountHeight = Mathf.Max(0.55f, col.height * 0.65f);
+                    mountZ = -0.15f;
+                }
             }
-            _tempMountPoint.transform.localPosition = new Vector3(0f, mountHeight, -0.1f);
-            _tempMountPoint.transform.localRotation = Quaternion.identity;
+
+            _baseLocalPos = new Vector3(0f, mountHeight, mountZ);
+            _tempMountPoint.transform.localPosition = _baseLocalPos;
+            _tempMountPoint.transform.localRotation = Quaternion.Euler(_basePitch, 0f, 0f);
 
             Vector3 detachOffset = new Vector3(0f, 0.5f, -1.5f);
 
-            // Attach player using native Valheim seated saddle animation ("attach_chair")
+            // Attach player using posture matching creature stature
             player.AttachStart(
                 _tempMountPoint.transform,
                 beast.gameObject,
                 hideWeapons: true,
                 isBed: false,
                 onShip: false,
-                attachAnimation: "attach_chair",
+                attachAnimation: attachAnim,
                 detachOffset: detachOffset,
                 cameraPos: null
             );
@@ -113,16 +133,37 @@ namespace VikingHusbandry.Features.Rodeo
                 _player.Message(MessageHud.MessageType.TopLeft, $"Subduing {currentPercent}% (Space: Jump off)");
             }
 
-            // Make beast thrash erratically
+            // Decay violent bucking impulse
+            _buckImpulse = Mathf.Lerp(_buckImpulse, 0f, dt * 5f);
+
+            // Calculate dynamic procedural struggle dynamics
+            float thrashPitch = (Mathf.Sin(_rodeoTimer * 12f) * 4f) + _buckImpulse;
+            float thrashRoll = Mathf.Cos(_rodeoTimer * 10f) * 6f;
+            float thrashYaw = Mathf.Sin(_rodeoTimer * 8f) * 4f;
+
+            if (_tempMountPoint != null)
+            {
+                _tempMountPoint.transform.localRotation = Quaternion.Euler(_basePitch - thrashPitch, thrashYaw, thrashRoll);
+                _tempMountPoint.transform.localPosition = _baseLocalPos + new Vector3(
+                    Mathf.Sin(_rodeoTimer * 10f) * 0.015f,
+                    Mathf.Abs(Mathf.Sin(_rodeoTimer * 16f)) * 0.02f,
+                    -(_buckImpulse / 25f) * 0.04f
+                );
+            }
+
+            // Make beast thrash and weave erratically
             _thrashTimer += dt;
             if (_beastAI != null)
             {
-                Vector3 moveTarget = _beast.transform.position + (_beast.transform.forward * 3f);
+                float weaveAngle = Mathf.Sin(_rodeoTimer * 3.5f) * 35f;
+                Vector3 weaveDir = Quaternion.Euler(0f, weaveAngle, 0f) * _beast.transform.forward;
+                Vector3 moveTarget = _beast.transform.position + (weaveDir * 4f);
                 AIHelper.MoveTo(_beastAI, dt, moveTarget, 1f, true);
 
-                if (_thrashTimer >= 2.5f)
+                if (_thrashTimer >= 2.2f)
                 {
                     _thrashTimer = 0f;
+                    _buckImpulse = 24f; // Violent upward/forward buck kick
                     ZSyncAnimation zanim = _beast.GetZAnim();
                     if (zanim != null)
                     {
@@ -186,6 +227,9 @@ namespace VikingHusbandry.Features.Rodeo
             _thrashTimer = 0f;
             _lastProgressUpdateTimer = 0f;
             _lastPercentShown = -1;
+            _baseLocalPos = Vector3.zero;
+            _basePitch = 0f;
+            _buckImpulse = 0f;
         }
 
         private void OnDestroy()

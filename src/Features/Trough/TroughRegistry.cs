@@ -14,6 +14,13 @@ namespace VikingHusbandry.Features.Trough
             if (container == null) return false;
             if (container.m_wagon != null) return false;
 
+            // Must be a player-buildable piece (excludes tombstones, drops, companions)
+            if (container.GetComponentInParent<Piece>() == null) return false;
+
+            // Exclude creatures and incinerator
+            if (container.GetComponentInParent<Character>() != null) return false;
+            if (container.GetComponentInParent<Incinerator>() != null) return false;
+
             // Exclude ship holds
             if (container.GetComponentInParent<Ship>() != null) return false;
 
@@ -70,6 +77,7 @@ namespace VikingHusbandry.Features.Trough
             bool currentlyTrough = IsTrough(container);
             int nextState = currentlyTrough ? 0 : 1;
             nview.GetZDO().Set(s_isTroughHash, nextState);
+            TroughVisualizer.Get(container)?.SetVisualState(nextState == 1);
 
             if (player != null)
             {

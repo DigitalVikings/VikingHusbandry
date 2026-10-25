@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <!-- Import local environment path overrides -->
   <Import Project="Environment.props" Condition="Exists('Environment.props')" />
