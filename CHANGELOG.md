@@ -1,6 +1,12 @@
-﻿# Changelog
+# Changelog
 
 All notable changes to **VikingHusbandry** will be documented in this file.
+
+## [0.2.0] - 2026-10-25
+
+### Added
+- **Procedural 3D Feeding Trough**: Toggling standard wooden chests (`Shift + E`) displays a procedural Norse feed trough model with real-time straw and feed mound fill tracking.
+- **Dynamic Rodeo Struggle Dynamics**: Creature subdual mounting now features violent bucking impulse decay and procedural pitch, roll, and yaw struggle weaving.
 
 ## [0.1.0] - 2026-10-25
 

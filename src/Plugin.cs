@@ -11,7 +11,7 @@ namespace VikingHusbandry
     {
         public const string ModGuid = "com.digitalvikings.vikinghusbandry";
         public const string ModName = "VikingHusbandry";
-        public const string ModVersion = "0.1.0";
+        public const string ModVersion = "0.2.0";
 
         internal static ManualLogSource Log = null!;
         private Harmony _harmony = null!;
