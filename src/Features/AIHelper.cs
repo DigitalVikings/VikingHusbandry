@@ -35,6 +35,18 @@ namespace VikingHusbandry.Features
             "m_timeSinceHurt"
         );
 
+        private static readonly MethodInfo? s_fleeMethod = AccessTools.Method(
+            typeof(BaseAI),
+            "Flee",
+            new[] { typeof(float), typeof(Vector3) }
+        );
+
+        public static void Flee(BaseAI ai, float dt, Vector3 point)
+        {
+            if (ai == null || s_fleeMethod == null) return;
+            s_fleeMethod.Invoke(ai, new object[] { dt, point });
+        }
+
         public static bool MoveTo(BaseAI ai, float dt, Vector3 point, float dist, bool run)
         {
             if (ai == null || s_moveToMethod == null) return false;

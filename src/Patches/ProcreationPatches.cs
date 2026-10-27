@@ -12,7 +12,7 @@ namespace VikingHusbandry.Patches
         [HarmonyPrefix]
         public static bool Procreate_Prefix(Procreation __instance)
         {
-            if (!ModConfig.ModEnabled.Value || !ModConfig.AntiChuteHorizontalOnly.Value)
+            if (!ModConfig.ModEnabled.Value || !ModConfig.AntiChuteHorizontalOnly.Value || __instance == null || !__instance)
             {
                 return true;
             }
@@ -26,6 +26,8 @@ namespace VikingHusbandry.Patches
             {
                 return true;
             }
+
+            if (ZNetScene.instance == null) return true;
 
             int prefabHash = nview.GetZDO().GetPrefab();
             GameObject myPrefab = ZNetScene.instance.GetPrefab(prefabHash);

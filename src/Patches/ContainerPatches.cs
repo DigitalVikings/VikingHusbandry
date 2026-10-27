@@ -12,7 +12,7 @@ namespace VikingHusbandry.Patches
         [HarmonyPostfix]
         public static void Awake_Postfix(Container __instance)
         {
-            if (__instance != null && __instance.GetComponentInParent<Piece>() != null && TroughRegistry.IsValidChest(__instance))
+            if (__instance != null && __instance && __instance.GetComponentInParent<Piece>() != null && TroughRegistry.IsValidChest(__instance))
             {
                 TroughRegistry.Register(__instance);
                 TroughVisualizer.EnsureAttached(__instance);
@@ -23,7 +23,7 @@ namespace VikingHusbandry.Patches
         [HarmonyPostfix]
         public static void UpdateUseVisual_Postfix(Container __instance)
         {
-            if (__instance != null && TroughRegistry.IsTrough(__instance))
+            if (__instance != null && __instance && TroughRegistry.IsTrough(__instance))
             {
                 TroughVisualizer.Get(__instance)?.EnsureChestRenderersHidden();
             }
@@ -33,7 +33,7 @@ namespace VikingHusbandry.Patches
         [HarmonyPrefix]
         public static bool Interact_Prefix(Container __instance, Humanoid character, bool hold, bool alt, ref bool __result)
         {
-            if (!ModConfig.ModEnabled.Value || !ModConfig.EnableTroughs.Value) return true;
+            if (!ModConfig.ModEnabled.Value || !ModConfig.EnableTroughs.Value || __instance == null || !__instance) return true;
             if (hold) return true;
 
             // Only allow toggling on valid storage chests (not barrels, carts, or ships)
@@ -55,7 +55,7 @@ namespace VikingHusbandry.Patches
         [HarmonyPostfix]
         public static void GetHoverText_Postfix(Container __instance, ref string __result)
         {
-            if (!ModConfig.ModEnabled.Value || !ModConfig.EnableTroughs.Value) return;
+            if (!ModConfig.ModEnabled.Value || !ModConfig.EnableTroughs.Value || __instance == null || !__instance) return;
 
             // Only show prompt on chests, not barrels or other containers
             if (!TroughRegistry.IsValidChest(__instance)) return;

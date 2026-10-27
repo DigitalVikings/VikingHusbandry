@@ -14,7 +14,7 @@ namespace VikingHusbandry.Patches
         [HarmonyPostfix]
         public static void Awake_Postfix(Tameable __instance)
         {
-            if (!ModConfig.ModEnabled.Value) return;
+            if (__instance == null || !__instance || !ModConfig.ModEnabled.Value) return;
 
             // Enable boar commandability so boars can be commanded like wolves
             if (ModConfig.AllowBoarCommands.Value && !__instance.m_commandable)
@@ -27,11 +27,11 @@ namespace VikingHusbandry.Patches
         [HarmonyPrefix]
         public static bool Interact_Prefix(Tameable __instance, Humanoid user, bool hold, bool alt, ref bool __result)
         {
-            if (!ModConfig.ModEnabled.Value) return true;
+            if (__instance == null || !__instance || !ModConfig.ModEnabled.Value) return true;
             if (hold) return true;
 
             Character character = __instance.GetComponent<Character>();
-            if (character == null) return true;
+            if (character == null || !character) return true;
 
             Player? player = user as Player;
             MonsterAI? monsterAI = __instance.GetComponent<MonsterAI>();
@@ -88,10 +88,10 @@ namespace VikingHusbandry.Patches
         [HarmonyPostfix]
         public static void GetHoverText_Postfix(Tameable __instance, ref string __result)
         {
-            if (!ModConfig.ModEnabled.Value) return;
+            if (__instance == null || !__instance || !ModConfig.ModEnabled.Value) return;
 
             Character character = __instance.GetComponent<Character>();
-            if (character == null) return;
+            if (character == null || !character) return;
 
             string keyUse = Localization.instance.Localize("$KEY_Use");
 
@@ -112,16 +112,18 @@ namespace VikingHusbandry.Patches
 
                     float progress = DownedTamingManager.GetSubdualProgress(character);
                     int subdualPercent = Mathf.Clamp(Mathf.RoundToInt(progress * 100f), 0, 100);
+                    bool isBoar = character.name.StartsWith("Boar") || (character.m_name != null && character.m_name.ToLower().Contains("boar"));
+                    string actionName = isBoar ? "Leash" : "Subdue";
 
                     if (DownedTamingManager.CanBeSubdued(character))
                     {
                         string progressText = subdualPercent > 0 ? $" ({subdualPercent}%)" : "";
-                        __result += $"\n[<color=yellow><b>{keyUse}</b></color>] Subdue{progressText}";
+                        __result += $"\n[<color=yellow><b>{keyUse}</b></color>] {actionName}{progressText}";
                     }
                     else if (subdualPercent > 0)
                     {
                         // Show saved subdual progress even while active/alerted so player sees their progress
-                        __result += $"\n<color=yellow>[Subdual: {subdualPercent}% - Parry or Sneak to grapple]</color>";
+                        __result += $"\n<color=yellow>[Subdual: {subdualPercent}% - Parry or Sneak to {actionName.ToLower()}]</color>";
                     }
                 }
                 return;
@@ -140,13 +142,13 @@ namespace VikingHusbandry.Patches
         [HarmonyPrefix]
         public static bool UseItem_Prefix(Tameable __instance, Humanoid user, ItemDrop.ItemData item, ref bool __result)
         {
-            if (!ModConfig.ModEnabled.Value || !ModConfig.EnableRodeoSubdual.Value) return true;
+            if (__instance == null || !__instance || !ModConfig.ModEnabled.Value || !ModConfig.EnableRodeoSubdual.Value) return true;
 
             Character character = __instance.GetComponent<Character>();
-            if (character == null || !DownedTamingManager.IsDowned(character)) return true;
+            if (character == null || !character || !DownedTamingManager.IsDowned(character)) return true;
 
             MonsterAI? monsterAI = __instance.GetComponent<MonsterAI>();
-            if (monsterAI == null) return true;
+            if (monsterAI == null || !monsterAI) return true;
 
             if (DownedTamingManager.TryForceFeed(user, item, __instance, monsterAI))
             {

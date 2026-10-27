@@ -16,12 +16,13 @@ namespace VikingHusbandry.Features.Trough
 
         public static TroughVisualizer? Get(Container container)
         {
-            if (container == null) return null;
+            if (container == null || !container) return null;
             return container.GetComponent<TroughVisualizer>();
         }
 
-        public static TroughVisualizer EnsureAttached(Container container)
+        public static TroughVisualizer? EnsureAttached(Container container)
         {
+            if (container == null || !container) return null;
             TroughVisualizer? vis = container.GetComponent<TroughVisualizer>();
             if (vis == null)
             {
@@ -33,12 +34,13 @@ namespace VikingHusbandry.Features.Trough
         private void Awake()
         {
             _container = GetComponent<Container>();
+            if (_container == null || !_container) return;
             CacheChestRenderers();
         }
 
         private void Start()
         {
-            if (_container != null && _container.GetInventory() != null)
+            if (_container != null && _container && _container.GetInventory() != null)
             {
                 _container.GetInventory().m_onChanged += OnInventoryChanged;
             }
@@ -48,7 +50,7 @@ namespace VikingHusbandry.Features.Trough
 
         private void OnDestroy()
         {
-            if (_container != null && _container.GetInventory() != null)
+            if (_container != null && _container && _container.GetInventory() != null)
             {
                 _container.GetInventory().m_onChanged -= OnInventoryChanged;
             }

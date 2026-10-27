@@ -1,6 +1,6 @@
 {
   "name": "VikingHusbandry",
-  "version_number": "0.2.0",
+  "version_number": "0.2.1",
   "website_url": "https://github.com/DigitalVikings/VikingHusbandry",
   "description": "Active rodeo subdual taming, 4-state companion stances, chest-to-feeding-trough conversion, and anti-chute paddock density control.",
   "dependencies": [

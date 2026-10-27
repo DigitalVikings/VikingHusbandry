@@ -8,12 +8,29 @@ namespace VikingHusbandry.Features.Rodeo
     {
         private static readonly int s_downedUntilHash = "VH_DownedUntil".GetStableHashCode();
         private static readonly int s_subdualProgressHash = "VH_Subdual".GetStableHashCode();
+        private static readonly int s_sleepingAnimHash = "sleeping".GetStableHashCode();
+
+        private static readonly HarmonyLib.AccessTools.FieldRef<Character, ZNetView>? s_charNViewRef =
+            HarmonyLib.AccessTools.FieldRefAccess<Character, ZNetView>("m_nview");
+
+        private static ZNetView? GetNView(Character character)
+        {
+            if (character == null || !character) return null;
+            if (s_charNViewRef != null)
+            {
+                ZNetView n = s_charNViewRef(character);
+                if (n != null && n) return n;
+            }
+            return character.GetComponent<ZNetView>();
+        }
 
         public static float GetSubdualProgress(Character character)
         {
-            if (character == null) return 0f;
+            if (character == null || !character) return 0f;
 
-            ZNetView nview = character.GetComponent<ZNetView>();
+            CheckDownedRecovery(character);
+
+            ZNetView? nview = GetNView(character);
             if (nview == null || !nview.IsValid())
             {
                 return 0f;
@@ -24,9 +41,9 @@ namespace VikingHusbandry.Features.Rodeo
 
         public static void SetSubdualProgress(Character character, float progress)
         {
-            if (character == null) return;
+            if (character == null || !character) return;
 
-            ZNetView nview = character.GetComponent<ZNetView>();
+            ZNetView? nview = GetNView(character);
             if (nview == null || !nview.IsValid())
             {
                 return;
@@ -37,14 +54,17 @@ namespace VikingHusbandry.Features.Rodeo
 
         public static bool IsDowned(Character character)
         {
+            CheckDownedRecovery(character);
             return GetDownedSecondsRemaining(character) > 0f;
         }
 
         public static float GetDownedSecondsRemaining(Character character)
         {
-            if (character == null || ZNet.instance == null) return 0f;
+            if (character == null || !character || ZNet.instance == null) return 0f;
 
-            ZNetView nview = character.GetComponent<ZNetView>();
+            CheckDownedRecovery(character);
+
+            ZNetView? nview = GetNView(character);
             if (nview == null || !nview.IsValid()) return 0f;
 
             long downedTicks = nview.GetZDO().GetLong(s_downedUntilHash, 0L);
@@ -56,36 +76,66 @@ namespace VikingHusbandry.Features.Rodeo
 
         public static void SetDowned(Character character, float durationSeconds)
         {
-            if (character == null || ZNet.instance == null) return;
+            if (character == null || !character || ZNet.instance == null) return;
 
-            ZNetView nview = character.GetComponent<ZNetView>();
+            ZNetView? nview = GetNView(character);
             if (nview == null || !nview.IsValid()) return;
 
             DateTime until = ZNet.instance.GetTime().AddSeconds(durationSeconds);
             nview.GetZDO().Set(s_downedUntilHash, until.Ticks);
+            nview.GetZDO().Set(ZDOVars.s_sleeping, true);
 
-            // Play stagger visual
-            ZSyncAnimation zanim = character.GetZAnim();
-            if (zanim != null)
+            // Create limp physics ragdoll for incapacitated pose
+            DownedRagdollManager.CreateDownedRagdoll(character);
+        }
+
+        public static void CheckDownedRecovery(Character character)
+        {
+            if (character == null || !character || ZNet.instance == null) return;
+
+            ZNetView? nview = GetNView(character);
+            if (nview == null || !nview.IsValid()) return;
+
+            long downedTicks = nview.GetZDO().GetLong(s_downedUntilHash, 0L);
+            if (downedTicks == 0L) return;
+
+            if (ZNet.instance.GetTime().Ticks >= downedTicks)
             {
-                zanim.SetTrigger("stagger");
+                // Downed timer expired without full taming: reset progress to 0 and wake up
+                nview.GetZDO().Set(s_downedUntilHash, 0L);
+                nview.GetZDO().Set(s_subdualProgressHash, 0f);
+                nview.GetZDO().Set(ZDOVars.s_sleeping, false);
+
+                // Remove ragdoll and restore living character visual
+                DownedRagdollManager.RemoveDownedRagdoll(character);
+
+                ZSyncAnimation zanim = character.GetZAnim();
+                if (zanim != null)
+                {
+                    zanim.SetTrigger("stagger");
+                }
             }
         }
 
         public static void ClearDowned(Character character)
         {
-            if (character == null) return;
+            if (character == null || !character) return;
 
-            ZNetView nview = character.GetComponent<ZNetView>();
+            ZNetView? nview = GetNView(character);
             if (nview == null || !nview.IsValid()) return;
 
             nview.GetZDO().Set(s_downedUntilHash, 0L);
             nview.GetZDO().Set(s_subdualProgressHash, 0f);
+            nview.GetZDO().Set(ZDOVars.s_sleeping, false);
+
+            // Remove ragdoll and restore living character visual
+            DownedRagdollManager.RemoveDownedRagdoll(character);
         }
 
         public static bool CanBeSubdued(Character character)
         {
-            if (character == null || character.IsTamed()) return false;
+            if (character == null || !character || character.IsTamed()) return false;
+            CheckDownedRecovery(character);
             if (IsDowned(character)) return false;
 
             // Opening 1: Character is staggering from a parry
@@ -102,7 +152,7 @@ namespace VikingHusbandry.Features.Rodeo
         {
             if (user == null || item == null || tameable == null || monsterAI == null) return false;
             Character character = tameable.GetComponent<Character>();
-            if (character == null || !IsDowned(character)) return false;
+            if (character == null || !character || !IsDowned(character)) return false;
 
             // Verify item is acceptable food
             if (!IsAcceptableFood(monsterAI, item))
