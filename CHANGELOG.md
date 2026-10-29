@@ -2,6 +2,15 @@
 
 All notable changes to **VikingHusbandry** will be documented in this file.
 
+## [0.2.2] - 2026-10-29
+
+### Added
+- **Offspring Stance Inheritance**: Newborn animals and maturing livestock automatically inherit their parent's companion stance and pen boundaries.
+- **3D Feed Trough Alpha Tufts**: Rendered dynamic straw fringe and tuft alpha shaders for the procedural Norse feed trough model.
+
+### Changed
+- **Livestock Default Stance**: Tamed animals default to `StayGuard` upon taming to maintain stable pen boundaries rather than following.
+
 ## [0.2.1] - 2026-10-27
 
 ### Added

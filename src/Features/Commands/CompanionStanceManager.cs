@@ -9,16 +9,29 @@ namespace VikingHusbandry.Features.Commands
 
         public static StanceType GetStance(Character character)
         {
-            if (character == null) return StanceType.FollowAggressive;
+            if (character == null) return StanceType.StayGuard;
 
             ZNetView nview = character.GetComponent<ZNetView>();
             if (nview == null || !nview.IsValid())
             {
+                return StanceType.StayGuard;
+            }
+
+            int val = nview.GetZDO().GetInt(s_stanceHash, -1);
+            if (val >= 0 && val <= 3)
+            {
+                return (StanceType)val;
+            }
+
+            // No explicit stance set yet: determine from native Valheim follow state
+            string follow = nview.GetZDO().GetString(ZDOVars.s_follow, "");
+            if (!string.IsNullOrEmpty(follow))
+            {
                 return StanceType.FollowAggressive;
             }
 
-            int val = nview.GetZDO().GetInt(s_stanceHash, 0);
-            return (StanceType)Mathf.Clamp(val, 0, 3);
+            // By default, pen-bound tamed livestock stay at their post / pen
+            return StanceType.StayGuard;
         }
 
         public static void SetStance(Character character, StanceType stance)
@@ -46,7 +59,7 @@ namespace VikingHusbandry.Features.Commands
             return next;
         }
 
-        public static void ApplyStanceToAI(Character character, MonsterAI monsterAI, Player player, StanceType stance)
+        public static void ApplyStanceToAI(Character character, MonsterAI monsterAI, Player? player, StanceType stance)
         {
             if (monsterAI == null || character == null) return;
 
