@@ -7,12 +7,7 @@ namespace VikingHusbandry.Features.Rodeo
     {
         private class DownedState
         {
-            public GameObject RagdollObj = null!;
-            public Vector3 OriginalColCenter;
-            public float OriginalColHeight;
-            public float OriginalColRadius;
-            public int OriginalColDirection;
-            public RigidbodyConstraints OriginalConstraints;
+            public GameObject? RagdollObj { get; set; }
         }
 
         private static readonly Dictionary<Character, DownedState> s_activeStates = new Dictionary<Character, DownedState>();
@@ -25,119 +20,32 @@ namespace VikingHusbandry.Features.Rodeo
 
         public static void CreateDownedRagdoll(Character character)
         {
+            // Downed state is rendered natively on the living character using Valheim's synchronized
+            // sleep animation pose (ZDOVars.s_sleeping).
+            // Do NOT instantiate a duplicate ragdoll prefab:
+            // 1) Prevents duplicate overlapping meshes (living character + ragdoll).
+            // 2) Prevents conflicts with loot mods (like InstantMonsterLootDrop) that hook Ragdoll.Awake.
+            // 3) Prevents persistent ZDO leaks in ZDOMan from prefab instantiation.
             if (character == null || !character) return;
-            if (HasRagdoll(character)) return;
 
-            GameObject? prefab = FindRagdollPrefab(character);
-            if (prefab == null) return;
-
-            // Instantiate ragdoll at character's exact world position and orientation
-            GameObject ragdollObj = Object.Instantiate(prefab, character.transform.position, character.transform.rotation);
-            ragdollObj.transform.localScale = character.transform.localScale;
-
-            // Zero out all initial velocities so ragdoll collapses downward in place rather than flying away
-            foreach (Rigidbody rb in ragdollObj.GetComponentsInChildren<Rigidbody>())
+            // Ensure character's native visual is active and all renderers are enabled
+            GameObject? vis = character.GetVisual();
+            if (vis != null && !vis.activeSelf)
             {
-                if (rb != null && !rb.isKinematic)
-                {
-                    rb.linearVelocity = Vector3.zero;
-                    rb.angularVelocity = Vector3.zero;
-                }
+                vis.SetActive(true);
             }
-
-            // Cancel and destroy native Ragdoll script so it never invokes DestroyNow() and never drops loot
-            Ragdoll nativeRagdoll = ragdollObj.GetComponent<Ragdoll>();
-            if (nativeRagdoll != null)
-            {
-                nativeRagdoll.CancelInvoke();
-                Object.Destroy(nativeRagdoll);
-            }
-
-            // Remove ZNetView so this remains a purely local cosmetic representation
-            ZNetView netView = ragdollObj.GetComponent<ZNetView>();
-            if (netView != null)
-            {
-                Object.Destroy(netView);
-            }
-
-            // Prevent physics collision between living character's capsule collider and ragdoll bones
-            Collider charCol = character.GetCollider();
-            if (charCol != null)
-            {
-                foreach (Collider c in ragdollObj.GetComponentsInChildren<Collider>())
-                {
-                    if (c != null)
-                    {
-                        Physics.IgnoreCollision(charCol, c, true);
-                    }
-                }
-            }
-
-            // Save original character collider and constraints state
-            CapsuleCollider? col = character.GetCollider();
-            Rigidbody? charRb = character.GetComponent<Rigidbody>();
-            DownedState state = new DownedState
-            {
-                RagdollObj = ragdollObj,
-                OriginalColCenter = col != null ? col.center : Vector3.zero,
-                OriginalColHeight = col != null ? col.height : 0.8f,
-                OriginalColRadius = col != null ? col.radius : 0.4f,
-                OriginalColDirection = col != null ? col.direction : 1,
-                OriginalConstraints = charRb != null ? charRb.constraints : RigidbodyConstraints.None
-            };
-
-            // Reshape capsule collider into a low horizontal ground cylinder matching the collapsed animal
-            if (col != null)
-            {
-                col.direction = 2; // Z-axis lengthwise
-                col.center = new Vector3(0f, 0.22f, 0f);
-                col.height = 1.0f;
-                col.radius = 0.35f;
-            }
-
-            // Lock character position with constraints rather than kinematic flag to avoid Unity kinematic velocity warnings
-            if (charRb != null)
-            {
-                if (!charRb.isKinematic)
-                {
-                    charRb.linearVelocity = Vector3.zero;
-                    charRb.angularVelocity = Vector3.zero;
-                }
-                charRb.constraints = RigidbodyConstraints.FreezeAll;
-            }
-
-            // Ignore physical collision between local player and downed character so walking near it never nudges it
-            if (Player.m_localPlayer != null && Player.m_localPlayer.GetCollider() != null && charCol != null)
-            {
-                Physics.IgnoreCollision(Player.m_localPlayer.GetCollider(), charCol, true);
-            }
-
-            // Match star/level visual tints if LevelEffects is present
-            LevelEffects charLevels = character.GetComponentInChildren<LevelEffects>();
-            LevelEffects ragdollLevels = ragdollObj.GetComponentInChildren<LevelEffects>();
-            if (charLevels != null && ragdollLevels != null)
-            {
-                charLevels.GetColorChanges(out float hue, out float sat, out float val);
-                if (ragdollLevels.m_mainRender != null && ragdollLevels.m_mainRender.material != null)
-                {
-                    ragdollLevels.m_mainRender.material.SetFloat("_Hue", hue);
-                    ragdollLevels.m_mainRender.material.SetFloat("_Saturation", sat);
-                    ragdollLevels.m_mainRender.material.SetFloat("_Value", val);
-                }
-            }
-
-            // Hide living character's standing animated visual armature
             Transform visual = character.transform.Find("Visual");
-            if (visual != null)
+            if (visual != null && !visual.gameObject.activeSelf)
             {
-                visual.gameObject.SetActive(false);
+                visual.gameObject.SetActive(true);
             }
 
-            // Attach controller to sync character position to ragdoll pelvis every frame
-            DownedRagdollController ctrl = ragdollObj.AddComponent<DownedRagdollController>();
-            ctrl.Setup(character);
-
-            s_activeStates[character] = state;
+            // Ensure sleeping animation parameter is set on living character
+            ZSyncAnimation zanim = character.GetZAnim();
+            if (zanim != null)
+            {
+                zanim.SetBool("sleeping", true);
+            }
         }
 
         public static void RemoveDownedRagdoll(Character character)
@@ -148,45 +56,34 @@ namespace VikingHusbandry.Features.Rodeo
             {
                 if (state.RagdollObj != null)
                 {
-                    // Snap character transform to ragdoll settled position so animal stands up where it fell
                     character.transform.position = state.RagdollObj.transform.position;
                     Object.Destroy(state.RagdollObj);
-                }
-
-                // Restore original collider dimensions
-                CapsuleCollider? col = character.GetCollider();
-                if (col != null)
-                {
-                    col.direction = state.OriginalColDirection;
-                    col.center = state.OriginalColCenter;
-                    col.height = state.OriginalColHeight;
-                    col.radius = state.OriginalColRadius;
-                }
-
-                // Restore original constraints
-                Rigidbody? charRb = character.GetComponent<Rigidbody>();
-                if (charRb != null)
-                {
-                    charRb.constraints = state.OriginalConstraints;
-                }
-
-                // Restore collision with local player
-                Collider? charCol = character.GetCollider();
-                if (Player.m_localPlayer != null && Player.m_localPlayer.GetCollider() != null && charCol != null)
-                {
-                    Physics.IgnoreCollision(Player.m_localPlayer.GetCollider(), charCol, false);
                 }
 
                 s_activeStates.Remove(character);
             }
 
-            // Restore character visual armature
+            // Restore character visual armature and wake up from sleeping pose
             if (character)
             {
+                GameObject? vis = character.GetVisual();
+                if (vis != null && !vis.activeSelf) vis.SetActive(true);
+
                 Transform visual = character.transform.Find("Visual");
-                if (visual != null)
+                if (visual != null && !visual.gameObject.activeSelf)
                 {
                     visual.gameObject.SetActive(true);
+                }
+
+                foreach (Renderer r in character.GetComponentsInChildren<Renderer>(true))
+                {
+                    if (r != null) r.enabled = true;
+                }
+
+                ZSyncAnimation zanim = character.GetZAnim();
+                if (zanim != null)
+                {
+                    zanim.SetBool("sleeping", false);
                 }
             }
         }
@@ -207,7 +104,19 @@ namespace VikingHusbandry.Features.Rodeo
             string cleanName = character.name.Replace("(Clone)", "").Trim();
             if (ZNetScene.instance != null)
             {
+                // Try lower case suffix (e.g. boar_ragdoll)
                 GameObject p = ZNetScene.instance.GetPrefab(cleanName + "_ragdoll");
+                if (p != null) return p;
+
+                // Try title case suffix (e.g. Wolf_Ragdoll, Moose_Ragdoll, Ulv_Ragdoll)
+                p = ZNetScene.instance.GetPrefab(cleanName + "_Ragdoll");
+                if (p != null) return p;
+
+                // Try prefix convention (e.g. Ragdoll_Asksvin)
+                p = ZNetScene.instance.GetPrefab("Ragdoll_" + cleanName);
+                if (p != null) return p;
+
+                p = ZNetScene.instance.GetPrefab("ragdoll_" + cleanName);
                 if (p != null) return p;
             }
 

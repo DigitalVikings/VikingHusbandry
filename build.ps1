@@ -12,21 +12,34 @@ param (
 $ErrorActionPreference = "Stop"
 
 # Resolve active profile from Environment.props
-$profile = "DEV"
+# Resolve active mod manager and profile from Environment.props
+$modManager = "Gale"
+$profile = "VanillaPlus-DEV"
 $envPropsPath = Join-Path $PSScriptRoot "Environment.props"
 if (Test-Path $envPropsPath) {
     try {
         [xml]$xml = Get-Content $envPropsPath
-        if ($xml.Project.PropertyGroup.R2ModmanProfile) {
+        if ($xml.Project.PropertyGroup.ModManager) {
+            $modManager = $xml.Project.PropertyGroup.ModManager.Trim()
+        }
+        if ($xml.Project.PropertyGroup.Profile) {
+            $profile = $xml.Project.PropertyGroup.Profile.Trim()
+        } elseif ($xml.Project.PropertyGroup.R2ModmanProfile) {
             $profile = $xml.Project.PropertyGroup.R2ModmanProfile.Trim()
         }
     } catch { }
 }
 
-$pluginsDir = "$env:APPDATA\r2modmanPlus-local\Valheim\profiles\$profile\BepInEx\plugins"
-$modsYml = "$env:APPDATA\r2modmanPlus-local\Valheim\profiles\$profile\mods.yml"
+$profilesRoot = if ($modManager -eq "Gale") {
+    "$env:APPDATA\com.kesomannen.gale\valheim\profiles"
+} else {
+    "$env:APPDATA\r2modmanPlus-local\Valheim\profiles"
+}
+
+$pluginsDir = "$profilesRoot\$profile\BepInEx\plugins"
+$modsYml = "$profilesRoot\$profile\mods.yml"
 $thisDeployDir = Join-Path $pluginsDir "VikingHusbandry"
-$thisConfigPath = "$env:APPDATA\r2modmanPlus-local\Valheim\profiles\$profile\BepInEx\config\com.digitalvikings.vikinghusbandry.cfg"
+$thisConfigPath = "$profilesRoot\$profile\BepInEx\config\com.digitalvikings.vikinghusbandry.cfg"
 
 if ($CleanThisMod) {
     Write-Host "Cleaning VikingHusbandry deployment from profile '$profile'..." -ForegroundColor Cyan

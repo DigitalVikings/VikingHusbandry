@@ -93,9 +93,17 @@ namespace VikingHusbandry.Patches
                     body.angularVelocity = Vector3.zero;
                 }
 
-                if (!DownedRagdollManager.HasRagdoll(character))
+                // Ensure native sleeping animation pose is active and no duplicate ragdoll is spawned
+                ZSyncAnimation zanim = character.GetZAnim();
+                if (zanim != null)
                 {
-                    DownedRagdollManager.CreateDownedRagdoll(character);
+                    zanim.SetBool("sleeping", true);
+                }
+
+                // If a legacy ragdoll was attached, remove it so only the native model renders
+                if (DownedRagdollManager.HasRagdoll(character))
+                {
+                    DownedRagdollManager.RemoveDownedRagdoll(character);
                 }
 
                 __result = true;
@@ -157,6 +165,9 @@ namespace VikingHusbandry.Patches
 
                             // Reset hunger timer
                             AIHelper.ResetFeedingTimer(tameable);
+
+                            // Record livestock fattening from automated trough feeding
+                            FatteningManager.RecordTroughFeed(character);
                         }
 
                         __result = true;

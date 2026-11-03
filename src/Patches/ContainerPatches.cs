@@ -39,8 +39,13 @@ namespace VikingHusbandry.Patches
             // Only allow toggling on valid storage chests (not barrels, carts, or ships)
             if (!TroughRegistry.IsValidChest(__instance)) return true;
 
-            // Shift + E (InteractAlt) toggles Feeding Trough designation
-            if (alt)
+            // Alt + E (Keyboard Alt or Gamepad JoyAltKeys) toggles Feeding Trough designation
+            // Using dedicated Alt key detection decouples this from vanilla Shift (sprint) interactions
+            bool isAltModifierDown = ZInput.GetKey(KeyCode.LeftAlt, false) ||
+                                     ZInput.GetKey(KeyCode.RightAlt, false) ||
+                                     (ZInput.IsGamepadActive() && ZInput.GetButton("JoyAltKeys"));
+
+            if (isAltModifierDown)
             {
                 Player? player = character as Player;
                 TroughRegistry.ToggleTrough(__instance, player);
@@ -61,17 +66,20 @@ namespace VikingHusbandry.Patches
             if (!TroughRegistry.IsValidChest(__instance)) return;
 
             string keyUse = Localization.instance.Localize("$KEY_Use");
+            string altKeyLabel = ZInput.IsGamepadActive()
+                ? Localization.instance.Localize("$button_lb")
+                : Localization.instance.Localize("$button_lalt");
 
             if (TroughRegistry.IsTrough(__instance))
             {
                 int foodCount = TroughRegistry.CountAcceptableFood(__instance, null);
                 string header = $"<color=green><b>Feeding Trough</b></color> ({foodCount} items)";
-                string revertPrompt = $"[<color=yellow><b>Shift+{keyUse}</b></color>] Revert to Chest";
+                string revertPrompt = $"[<color=yellow><b>{altKeyLabel}+{keyUse}</b></color>] Revert to Chest";
                 __result = $"{header}\n{__result}\n{revertPrompt}";
             }
             else
             {
-                string togglePrompt = $"[<color=yellow><b>Shift+{keyUse}</b></color>] Convert to Feeding Trough";
+                string togglePrompt = $"[<color=yellow><b>{altKeyLabel}+{keyUse}</b></color>] Convert to Feeding Trough";
                 __result += $"\n{togglePrompt}";
             }
         }

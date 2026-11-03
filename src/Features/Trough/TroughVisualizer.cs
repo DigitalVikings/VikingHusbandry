@@ -14,7 +14,6 @@ namespace VikingHusbandry.Features.Trough
         private float _syncTimer;
         private static Material? s_woodMaterial;
         private static Material? s_strawMaterial;
-        private static Material? s_strawAlphaMaterial;
 
         public static TroughVisualizer? Get(Container container)
         {
@@ -170,7 +169,6 @@ namespace VikingHusbandry.Features.Trough
 
             Material? woodMat = GetWoodMaterial(chestMat);
             Material? strawMat = GetStrawMaterial(woodMat);
-            Material? strawAlphaMat = GetStrawAlphaMaterial();
 
             // 1. Trough wooden structure (uses authentic Scandinavian timber planking)
             GameObject frameObj = new GameObject("VH_TroughFrame");
@@ -187,7 +185,7 @@ namespace VikingHusbandry.Features.Trough
                 mr.sharedMaterial = woodMat;
             }
 
-            // 2. Feed mound inside trough (solid, opaque golden straw thatch bed)
+            // 2. Feed mound inside trough (solid golden straw bedding)
             _feedMoundObj = new GameObject("VH_FeedMound");
             _feedMoundObj.transform.SetParent(_troughVisualObj.transform, false);
             _feedMoundObj.transform.localPosition = new Vector3(0f, 0.22f, 0f);
@@ -198,21 +196,6 @@ namespace VikingHusbandry.Features.Trough
 
             MeshRenderer feedMr = _feedMoundObj.AddComponent<MeshRenderer>();
             feedMr.sharedMaterial = strawMat;
-
-            // 3. Wispy straw fringe cards (loose straw blades rising above the mound)
-            if (strawAlphaMat != null)
-            {
-                GameObject tuftsObj = new GameObject("VH_FeedTufts");
-                tuftsObj.transform.SetParent(_feedMoundObj.transform, false);
-                tuftsObj.transform.localPosition = Vector3.zero;
-                tuftsObj.transform.localRotation = Quaternion.identity;
-
-                MeshFilter tuftsMf = tuftsObj.AddComponent<MeshFilter>();
-                tuftsMf.sharedMesh = TroughMeshBuilder.GetOrCreateTuftsMesh();
-
-                MeshRenderer tuftsMr = tuftsObj.AddComponent<MeshRenderer>();
-                tuftsMr.sharedMaterial = strawAlphaMat;
-            }
         }
 
         private static Material? GetWoodMaterial(Material? fallbackMat)
@@ -266,89 +249,32 @@ namespace VikingHusbandry.Features.Trough
 
             if (ZNetScene.instance != null)
             {
-                // 1. Primary: wood_roof_45 New/large_lod exclusively uses straw_roof
-                GameObject roof = ZNetScene.instance.GetPrefab("wood_roof_45");
-                if (roof != null)
+                // 1. Primary: rug_straw (StrawFloor_mat - authentic seamless golden straw bedding)
+                GameObject rug = ZNetScene.instance.GetPrefab("rug_straw");
+                if (rug != null)
                 {
-                    Transform lod = roof.transform.Find("New/large_lod");
-                    if (lod != null)
+                    Renderer r = rug.GetComponentInChildren<Renderer>();
+                    if (r != null && r.sharedMaterial != null)
                     {
-                        Renderer r = lod.GetComponent<Renderer>();
-                        if (r != null && r.sharedMaterial != null)
-                        {
-                            s_strawMaterial = r.sharedMaterial;
-                            return s_strawMaterial;
-                        }
-                    }
-
-                    Transform straw = roof.transform.Find("New/high/understraw");
-                    if (straw != null)
-                    {
-                        Renderer r = straw.GetComponent<Renderer>();
-                        if (r != null && r.sharedMaterial != null)
-                        {
-                            s_strawMaterial = r.sharedMaterial;
-                            return s_strawMaterial;
-                        }
+                        s_strawMaterial = r.sharedMaterial;
+                        return s_strawMaterial;
                     }
                 }
 
-                // 2. Fallback: wood_roof
-                GameObject basicRoof = ZNetScene.instance.GetPrefab("wood_roof");
-                if (basicRoof != null)
+                // 2. Secondary fallback: bed (BedSimple_Mat)
+                GameObject bed = ZNetScene.instance.GetPrefab("bed");
+                if (bed != null)
                 {
-                    Transform lod = basicRoof.transform.Find("New/large_lod");
-                    if (lod != null)
+                    Renderer r = bed.GetComponentInChildren<Renderer>();
+                    if (r != null && r.sharedMaterial != null)
                     {
-                        Renderer r = lod.GetComponent<Renderer>();
-                        if (r != null && r.sharedMaterial != null)
-                        {
-                            s_strawMaterial = r.sharedMaterial;
-                            return s_strawMaterial;
-                        }
+                        s_strawMaterial = r.sharedMaterial;
+                        return s_strawMaterial;
                     }
                 }
             }
 
             return fallbackMat ?? new Material(Shader.Find("Standard"));
-        }
-
-        private static Material? GetStrawAlphaMaterial()
-        {
-            if (s_strawAlphaMaterial != null) return s_strawAlphaMaterial;
-
-            if (ZNetScene.instance != null)
-            {
-                // 1. Primary: wood_roof_45 New/high/straw (uses straw_roof_alpha)
-                GameObject roof = ZNetScene.instance.GetPrefab("wood_roof_45");
-                if (roof != null)
-                {
-                    Transform straw = roof.transform.Find("New/high/straw");
-                    if (straw != null)
-                    {
-                        Renderer r = straw.GetComponent<Renderer>();
-                        if (r != null && r.sharedMaterial != null)
-                        {
-                            s_strawAlphaMaterial = r.sharedMaterial;
-                            return s_strawAlphaMaterial;
-                        }
-                    }
-                }
-
-                // 2. Fallback: goblin_strawpile (uses straw_roof_worn_alpha)
-                GameObject strawpile = ZNetScene.instance.GetPrefab("goblin_strawpile");
-                if (strawpile != null)
-                {
-                    Renderer r = strawpile.GetComponentInChildren<Renderer>();
-                    if (r != null && r.sharedMaterial != null)
-                    {
-                        s_strawAlphaMaterial = r.sharedMaterial;
-                        return s_strawAlphaMaterial;
-                    }
-                }
-            }
-
-            return null;
         }
 
         private void OnInventoryChanged()

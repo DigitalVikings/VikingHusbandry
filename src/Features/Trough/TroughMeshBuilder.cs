@@ -7,7 +7,6 @@ namespace VikingHusbandry.Features.Trough
     {
         private static Mesh? s_troughMesh;
         private static Mesh? s_feedMesh;
-        private static Mesh? s_tuftsMesh;
 
         public static Mesh GetOrCreateTroughMesh()
         {
@@ -109,9 +108,9 @@ namespace VikingHusbandry.Features.Trough
                     verts.Add(new Vector3(x, moundHeight, z));
                     norms.Add(Vector3.up);
 
-                    // Tiling UV coordinates across the straw texture:
-                    // 2.2 repeats along length, 1.1 repeats along depth
-                    uvs.Add(new Vector2(tx * 2.2f, tz * 1.1f));
+                    // Fine-grain downscaled tiling across the straw texture:
+                    // 6.0 repeats along length, 3.0 repeats along depth (3x finer than vanilla floor rug)
+                    uvs.Add(new Vector2(tx * 6.0f, tz * 3.0f));
                 }
             }
 
@@ -145,90 +144,6 @@ namespace VikingHusbandry.Features.Trough
 
             s_feedMesh = mesh;
             return s_feedMesh;
-        }
-
-        public static Mesh GetOrCreateTuftsMesh()
-        {
-            if (s_tuftsMesh != null) return s_tuftsMesh;
-
-            Mesh mesh = new Mesh { name = "VH_ProceduralTuftsMesh" };
-
-            List<Vector3> verts = new();
-            List<Vector3> norms = new();
-            List<Vector2> uvs = new();
-            List<int> tris = new();
-
-            // Scattered wispy straw cards across the mound for loose 3D straw stalk volume
-            (float x, float z, float rotDeg, float cardW, float cardH)[] tufts = new[]
-            {
-                (-0.35f, -0.05f,  15f, 0.22f, 0.12f),
-                (-0.20f,  0.07f, -25f, 0.24f, 0.13f),
-                (-0.05f, -0.06f,  40f, 0.23f, 0.12f),
-                ( 0.12f,  0.05f, -10f, 0.25f, 0.14f),
-                ( 0.28f, -0.04f,  30f, 0.22f, 0.12f),
-                (-0.30f,  0.08f, -45f, 0.20f, 0.11f),
-                (-0.12f, -0.08f,  20f, 0.21f, 0.12f),
-                ( 0.04f,  0.08f, -35f, 0.24f, 0.13f),
-                ( 0.22f,  0.06f,  15f, 0.20f, 0.11f),
-                ( 0.36f, -0.02f, -20f, 0.19f, 0.11f),
-            };
-
-            foreach (var t in tufts)
-            {
-                float tx = Mathf.InverseLerp(-0.51f, 0.51f, t.x);
-                float tz = Mathf.InverseLerp(-0.21f, 0.21f, t.z);
-                float curve = Mathf.Sin(tx * Mathf.PI) * Mathf.Sin(tz * Mathf.PI);
-                float baseY = (curve * 0.09f) + 0.005f;
-
-                AddStrawTuftCard(verts, norms, uvs, tris, new Vector3(t.x, baseY, t.z), t.rotDeg, t.cardW, t.cardH);
-            }
-
-            mesh.SetVertices(verts);
-            mesh.SetNormals(norms);
-            mesh.SetUVs(0, uvs);
-            mesh.SetTriangles(tris, 0);
-            mesh.RecalculateNormals();
-            mesh.RecalculateBounds();
-
-            s_tuftsMesh = mesh;
-            return s_tuftsMesh;
-        }
-
-        private static void AddStrawTuftCard(List<Vector3> verts, List<Vector3> norms, List<Vector2> uvs, List<int> tris,
-            Vector3 center, float rotDeg, float width, float height)
-        {
-            float halfW = width * 0.5f;
-            Quaternion rot = Quaternion.Euler(18f, rotDeg, 4f);
-
-            Vector3 v0 = center + (rot * new Vector3(-halfW, 0f, 0f));
-            Vector3 v1 = center + (rot * new Vector3(-halfW, height, 0f));
-            Vector3 v2 = center + (rot * new Vector3( halfW, height, 0f));
-            Vector3 v3 = center + (rot * new Vector3( halfW, 0f, 0f));
-
-            int baseIdx = verts.Count;
-
-            // Side A (Clockwise facing forward)
-            verts.Add(v0); verts.Add(v1); verts.Add(v2); verts.Add(v3);
-            norms.Add(Vector3.up); norms.Add(Vector3.up); norms.Add(Vector3.up); norms.Add(Vector3.up);
-            uvs.Add(new Vector2(0f, 0f));
-            uvs.Add(new Vector2(0f, 1f));
-            uvs.Add(new Vector2(1f, 1f));
-            uvs.Add(new Vector2(1f, 0f));
-
-            tris.Add(baseIdx); tris.Add(baseIdx + 1); tris.Add(baseIdx + 2);
-            tris.Add(baseIdx); tris.Add(baseIdx + 2); tris.Add(baseIdx + 3);
-
-            // Side B (Clockwise facing backward for two-sided visibility)
-            int bIdx = verts.Count;
-            verts.Add(v0); verts.Add(v3); verts.Add(v2); verts.Add(v1);
-            norms.Add(Vector3.down); norms.Add(Vector3.down); norms.Add(Vector3.down); norms.Add(Vector3.down);
-            uvs.Add(new Vector2(0f, 0f));
-            uvs.Add(new Vector2(1f, 0f));
-            uvs.Add(new Vector2(1f, 1f));
-            uvs.Add(new Vector2(0f, 1f));
-
-            tris.Add(bIdx); tris.Add(bIdx + 1); tris.Add(bIdx + 2);
-            tris.Add(bIdx); tris.Add(bIdx + 2); tris.Add(bIdx + 3);
         }
 
         private static void AddBox(List<Vector3> verts, List<Vector3> norms, List<Vector2> uvs, List<int> tris, Vector3 center, Vector3 size)
@@ -268,20 +183,20 @@ namespace VikingHusbandry.Features.Trough
                 center + new Vector3(-h.x, -h.y, h.z),
                 Vector3.forward, size.x, size.y);
 
-            // Left (-X) - Clockwise from outside (-X towards +X)
+            // Left (-X) - Clockwise outward normal (-X)
             AddQuad(verts, norms, uvs, tris,
-                center + new Vector3(-h.x, -h.y, -h.z),
+                center + new Vector3(-h.x, -h.y, h.z),
+                center + new Vector3(-h.x,  h.y, h.z),
                 center + new Vector3(-h.x,  h.y, -h.z),
-                center + new Vector3(-h.x,  h.y,  h.z),
-                center + new Vector3(-h.x, -h.y,  h.z),
+                center + new Vector3(-h.x, -h.y, -h.z),
                 Vector3.left, size.z, size.y);
 
-            // Right (+X) - Clockwise from outside (+X towards -X)
+            // Right (+X) - Clockwise outward normal (+X)
             AddQuad(verts, norms, uvs, tris,
-                center + new Vector3(h.x, -h.y,  h.z),
-                center + new Vector3(h.x,  h.y,  h.z),
-                center + new Vector3(h.x,  h.y, -h.z),
                 center + new Vector3(h.x, -h.y, -h.z),
+                center + new Vector3(h.x,  h.y, -h.z),
+                center + new Vector3(h.x,  h.y,  h.z),
+                center + new Vector3(h.x, -h.y,  h.z),
                 Vector3.right, size.z, size.y);
         }
 

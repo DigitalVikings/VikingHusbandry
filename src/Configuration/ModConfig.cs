@@ -24,6 +24,14 @@ namespace VikingHusbandry.Configuration
         public static ConfigEntry<bool> AntiChuteHorizontalOnly { get; private set; } = null!;
         public static ConfigEntry<float> PaddockRadius { get; private set; } = null!;
 
+        // 4 - Livestock Fattening
+        public static ConfigEntry<bool> EnableFattening { get; private set; } = null!;
+        public static ConfigEntry<float> MaxFattenBonus { get; private set; } = null!;
+        public static ConfigEntry<float> FatteningHalfLife { get; private set; } = null!;
+
+        // 5 - Genetics & Breeding
+        public static ConfigEntry<bool> EnablePartnerStarInheritance { get; private set; } = null!;
+
         public static void Init(ConfigFile config)
         {
             ModEnabled = Bind(
@@ -113,7 +121,7 @@ namespace VikingHusbandry.Configuration
                 "4 - Troughs & Paddocks",
                 "EnableTroughs",
                 true,
-                "Allow wooden chests to be toggled into Feeding Troughs via Shift + E.",
+                "Allow wooden chests to be toggled into Feeding Troughs via Alt + E.",
                 order: 40
             );
 
@@ -142,6 +150,42 @@ namespace VikingHusbandry.Configuration
                 20.0f,
                 "Horizontal radius (in meters) checked around troughs or breeding pairs for population capping.",
                 order: 25
+            );
+
+            EnableFattening = Bind(
+                config,
+                "5 - Livestock Fattening",
+                "EnableFattening",
+                true,
+                "Tamed animals gain fattening bonus when eating from feeding troughs, increasing item drop yield and drop chances upon slaughter.",
+                order: 20
+            );
+
+            MaxFattenBonus = Bind(
+                config,
+                "5 - Livestock Fattening",
+                "MaxFattenBonus",
+                1.0f,
+                "Maximum bonus loot multiplier from fattening (1.0 = +100% max extra drops / 2x yield with diminishing returns).",
+                order: 15
+            );
+
+            FatteningHalfLife = Bind(
+                config,
+                "5 - Livestock Fattening",
+                "FatteningHalfLife",
+                8.0f,
+                "Amount of trough food consumed required to reach ~63% of the maximum fattening bonus.",
+                order: 10
+            );
+
+            EnablePartnerStarInheritance = Bind(
+                config,
+                "6 - Genetics & Breeding",
+                "EnablePartnerStarInheritance",
+                true,
+                "When breeding, offspring have a 50% chance to inherit the star level of the nearby partner creature instead of exclusively inheriting from the mother.",
+                order: 5
             );
         }
 

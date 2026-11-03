@@ -4,6 +4,7 @@ using VikingHusbandry.Configuration;
 using VikingHusbandry.Features;
 using VikingHusbandry.Features.Commands;
 using VikingHusbandry.Features.Rodeo;
+using VikingHusbandry.Features.Trough;
 
 namespace VikingHusbandry.Patches
 {
@@ -112,8 +113,8 @@ namespace VikingHusbandry.Patches
 
                     float progress = DownedTamingManager.GetSubdualProgress(character);
                     int subdualPercent = Mathf.Clamp(Mathf.RoundToInt(progress * 100f), 0, 100);
-                    bool isBoar = character.name.StartsWith("Boar") || (character.m_name != null && character.m_name.ToLower().Contains("boar"));
-                    string actionName = isBoar ? "Leash" : "Subdue";
+                    bool isTether = RodeoController.IsTetherCreature(character);
+                    string actionName = isTether ? "Leash" : "Subdue";
 
                     if (DownedTamingManager.CanBeSubdued(character))
                     {
@@ -135,6 +136,15 @@ namespace VikingHusbandry.Patches
                 StanceType stance = CompanionStanceManager.GetStance(character);
                 string stanceName = CompanionStanceManager.GetStanceDisplayName(stance);
                 __result += $"\n<color=#55ffff>[{stanceName}]</color>";
+            }
+
+            if (ModConfig.EnableFattening.Value)
+            {
+                string? fattenText = FatteningManager.GetFattenStatusText(character);
+                if (!string.IsNullOrEmpty(fattenText))
+                {
+                    __result += $"\n{fattenText}";
+                }
             }
         }
 

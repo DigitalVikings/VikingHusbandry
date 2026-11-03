@@ -1,5 +1,5 @@
+using System;
 using System.Collections.Generic;
-using System.Reflection.Emit;
 using HarmonyLib;
 using UnityEngine;
 using VikingHusbandry.Configuration;
@@ -11,11 +11,90 @@ namespace VikingHusbandry.Patches
     [HarmonyPatch(typeof(Procreation))]
     public static class ProcreationPatches
     {
+        private static readonly AccessTools.FieldRef<Procreation, ZNetView> _procreationNView =
+            AccessTools.FieldRefAccess<Procreation, ZNetView>("m_nview");
+        private static readonly AccessTools.FieldRef<Procreation, Character> _procreationChar =
+            AccessTools.FieldRefAccess<Procreation, Character>("m_character");
+        private static readonly int s_partnerLevelHash = "VH_PartnerLevel".GetStableHashCode();
+
+        [ThreadStatic]
+        internal static Procreation? s_activeMother;
+
+        [ThreadStatic]
+        internal static Character? s_newbornOffspring;
+
+        private static bool? s_isStarLevelSystemInstalled;
+        private static bool IsStarLevelSystemInstalled
+        {
+            get
+            {
+                if (!s_isStarLevelSystemInstalled.HasValue)
+                {
+                    s_isStarLevelSystemInstalled = BepInEx.Bootstrap.Chainloader.PluginInfos != null &&
+                                                  BepInEx.Bootstrap.Chainloader.PluginInfos.ContainsKey("MidnightsFX.StarLevelSystem");
+                }
+                return s_isStarLevelSystemInstalled.Value;
+            }
+        }
+
+        [HarmonyPatch("MakePregnant")]
+        [HarmonyPrefix]
+        public static void MakePregnant_Prefix(Procreation __instance)
+        {
+            if (!ModConfig.ModEnabled.Value || !ModConfig.EnablePartnerStarInheritance.Value || IsStarLevelSystemInstalled || __instance == null) return;
+
+            ZNetView nview = _procreationNView(__instance);
+            if (nview == null || !nview.IsValid()) return;
+
+            Character mother = _procreationChar(__instance);
+            if (mother == null) return;
+
+            Vector3 pos = __instance.transform.position;
+            float checkRange = __instance.m_partnerCheckRange;
+            float rangeSq = checkRange * checkRange;
+
+            int bestPartnerLevel = 1;
+            List<Character> allChars = Character.GetAllCharacters();
+            for (int i = 0; i < allChars.Count; i++)
+            {
+                Character other = allChars[i];
+                if (other == null || other == mother || other.IsDead() || !other.IsTamed()) continue;
+
+                if (other.m_name != mother.m_name) continue;
+
+                Vector3 diff = other.transform.position - pos;
+                diff.y = 0f;
+                if (diff.sqrMagnitude <= rangeSq)
+                {
+                    int lvl = other.GetLevel();
+                    if (lvl > bestPartnerLevel)
+                    {
+                        bestPartnerLevel = lvl;
+                    }
+                }
+            }
+
+            if (bestPartnerLevel > 1)
+            {
+                nview.GetZDO().Set(s_partnerLevelHash, bestPartnerLevel);
+            }
+        }
+
         [HarmonyPatch("Procreate")]
         [HarmonyPrefix]
-        public static bool Procreate_Prefix(Procreation __instance)
+        public static bool Procreate_Prefix(Procreation __instance, bool __runOriginal)
         {
-            if (!ModConfig.ModEnabled.Value || !ModConfig.AntiChuteHorizontalOnly.Value || __instance == null || !__instance)
+            if (!__runOriginal || __instance == null || !__instance)
+            {
+                s_activeMother = null;
+                s_newbornOffspring = null;
+                return false;
+            }
+
+            s_activeMother = __instance;
+            s_newbornOffspring = null;
+
+            if (!ModConfig.ModEnabled.Value || !ModConfig.AntiChuteHorizontalOnly.Value)
             {
                 return true;
             }
@@ -55,55 +134,53 @@ namespace VikingHusbandry.Patches
         }
 
         [HarmonyPatch("Procreate")]
-        [HarmonyTranspiler]
-        public static IEnumerable<CodeInstruction> Procreate_Transpiler(IEnumerable<CodeInstruction> instructions)
+        [HarmonyPostfix]
+        public static void Procreate_Postfix(Procreation __instance)
         {
-            var matcher = new CodeMatcher(instructions);
-
-            matcher.MatchForward(false,
-                new CodeMatch(OpCodes.Callvirt, AccessTools.Method(typeof(Character), nameof(Character.SetTamed))));
-
-            if (matcher.IsInvalid)
+            if (s_activeMother != null && s_newbornOffspring != null)
             {
-                VikingHusbandryPlugin.Log.LogError("Failed to match Character.SetTamed in Procreation.Procreate transpiler");
-                return instructions;
+                InheritParentStance(s_activeMother, s_newbornOffspring);
             }
+        }
 
-            // Scan backwards from Character.SetTamed to find the ldloc instruction that pushed the offspring Character instance (IL_01B9: ldloc.s V_6)
-            var scan = matcher.Clone();
-            CodeInstruction? loadCharInst = null;
-            for (int i = 0; i < 6; i++)
-            {
-                scan.Advance(-1);
-                if (scan.Instruction.IsLdloc())
-                {
-                    loadCharInst = scan.Instruction;
-                    break;
-                }
-            }
-
-            if (loadCharInst == null)
-            {
-                VikingHusbandryPlugin.Log.LogError("Failed to locate offspring Character ldloc instruction before Character.SetTamed in Procreation.Procreate");
-                return instructions;
-            }
-
-            matcher.Advance(1).Insert(
-                new CodeInstruction(OpCodes.Ldarg_0),
-                new CodeInstruction(loadCharInst.opcode, loadCharInst.operand),
-                new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(ProcreationPatches), nameof(InheritParentStance)))
-            );
-
-            return matcher.InstructionEnumeration();
+        [HarmonyPatch("Procreate")]
+        [HarmonyFinalizer]
+        public static void Procreate_Finalizer()
+        {
+            s_activeMother = null;
+            s_newbornOffspring = null;
         }
 
         public static void InheritParentStance(Procreation mother, Character offspring)
         {
             if (mother == null || offspring == null) return;
-            if (!ModConfig.ModEnabled.Value || !ModConfig.EnableStances.Value) return;
+            if (!ModConfig.ModEnabled.Value) return;
 
             Character parent = mother.GetComponent<Character>();
             if (parent == null || !parent) return;
+
+            // 50/50 Star Inheritance between mother and nearby partner (yield to StarLevelSystem if installed)
+            if (ModConfig.EnablePartnerStarInheritance.Value)
+            {
+                ZNetView nview = _procreationNView(mother);
+                if (nview != null && nview.IsValid())
+                {
+                    int partnerLevel = nview.GetZDO().GetInt(s_partnerLevelHash, 0);
+                    if (partnerLevel > 1)
+                    {
+                        if (!IsStarLevelSystemInstalled)
+                        {
+                            int motherLevel = parent.GetLevel();
+                            int chosenLevel = UnityEngine.Random.value < 0.5f ? motherLevel : partnerLevel;
+                            chosenLevel = Mathf.Max(mother.m_minOffspringLevel, chosenLevel);
+                            offspring.SetLevel(chosenLevel);
+                        }
+                        nview.GetZDO().Set(s_partnerLevelHash, 0);
+                    }
+                }
+            }
+
+            if (!ModConfig.EnableStances.Value) return;
 
             StanceType stance = CompanionStanceManager.GetStance(parent);
             CompanionStanceManager.SetStance(offspring, stance);
@@ -111,11 +188,33 @@ namespace VikingHusbandry.Patches
             MonsterAI offspringAI = offspring.GetComponent<MonsterAI>();
             if (offspringAI != null)
             {
-                MonsterAI parentAI = parent.GetComponent<MonsterAI>();
+                MonsterAI? parentAI = parent.GetComponent<MonsterAI>();
                 GameObject? followTarget = parentAI != null ? parentAI.GetFollowTarget() : null;
                 Player? followPlayer = followTarget != null ? followTarget.GetComponent<Player>() : null;
 
                 CompanionStanceManager.ApplyStanceToAI(offspring, offspringAI, followPlayer, stance);
+            }
+            else
+            {
+                BaseAI baseAI = offspring.GetComponent<BaseAI>();
+                if (baseAI != null && (stance == StanceType.StayGuard || stance == StanceType.StayPassive))
+                {
+                    baseAI.ResetPatrolPoint();
+                    baseAI.SetPatrolPoint();
+                }
+            }
+        }
+    }
+
+    [HarmonyPatch(typeof(Character), nameof(Character.SetTamed))]
+    public static class CharacterSetTamedProcreationPatch
+    {
+        [HarmonyPostfix]
+        public static void Postfix(Character __instance)
+        {
+            if (ProcreationPatches.s_activeMother != null)
+            {
+                ProcreationPatches.s_newbornOffspring = __instance;
             }
         }
     }

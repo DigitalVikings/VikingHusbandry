@@ -85,8 +85,13 @@ namespace VikingHusbandry.Features.Rodeo
             nview.GetZDO().Set(s_downedUntilHash, until.Ticks);
             nview.GetZDO().Set(ZDOVars.s_sleeping, true);
 
-            // Create limp physics ragdoll for incapacitated pose
+            // Native animation pose for collapsed/downed state (no duplicate ragdoll prefab)
             DownedRagdollManager.CreateDownedRagdoll(character);
+            ZSyncAnimation zanim = character.GetZAnim();
+            if (zanim != null)
+            {
+                zanim.SetBool("sleeping", true);
+            }
         }
 
         public static void CheckDownedRecovery(Character character)
@@ -106,12 +111,13 @@ namespace VikingHusbandry.Features.Rodeo
                 nview.GetZDO().Set(s_subdualProgressHash, 0f);
                 nview.GetZDO().Set(ZDOVars.s_sleeping, false);
 
-                // Remove ragdoll and restore living character visual
+                // Clean up any legacy ragdoll if present and restore living character visual
                 DownedRagdollManager.RemoveDownedRagdoll(character);
 
                 ZSyncAnimation zanim = character.GetZAnim();
                 if (zanim != null)
                 {
+                    zanim.SetBool("sleeping", false);
                     zanim.SetTrigger("stagger");
                 }
             }
@@ -128,8 +134,14 @@ namespace VikingHusbandry.Features.Rodeo
             nview.GetZDO().Set(s_subdualProgressHash, 0f);
             nview.GetZDO().Set(ZDOVars.s_sleeping, false);
 
-            // Remove ragdoll and restore living character visual
+            // Clean up any legacy ragdoll if present and restore living character visual
             DownedRagdollManager.RemoveDownedRagdoll(character);
+
+            ZSyncAnimation zanim = character.GetZAnim();
+            if (zanim != null)
+            {
+                zanim.SetBool("sleeping", false);
+            }
         }
 
         public static bool CanBeSubdued(Character character)

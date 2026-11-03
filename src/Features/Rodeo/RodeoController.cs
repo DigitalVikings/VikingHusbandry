@@ -24,6 +24,15 @@ namespace VikingHusbandry.Features.Rodeo
         public bool IsRodeoActive => _player != null && _beast != null;
         public Player? ActivePlayer => _player;
 
+        public static bool IsTetherCreature(Character character)
+        {
+            if (character == null) return false;
+            string name = character.name;
+            string mName = character.m_name ?? "";
+            return name.StartsWith("Boar") || mName.IndexOf("boar", System.StringComparison.OrdinalIgnoreCase) >= 0 ||
+                   name.StartsWith("Wolf") || mName.IndexOf("wolf", System.StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+
         public static bool IsBeastInTether(Character character)
         {
             return Instance != null && Instance.IsRodeoActive && Instance._isTetherMode && Instance._beast == character;
@@ -76,8 +85,7 @@ namespace VikingHusbandry.Features.Rodeo
                 _lineObj = null;
             }
 
-            bool isBoar = beast.name.StartsWith("Boar") || (beast.m_name != null && beast.m_name.ToLower().Contains("boar"));
-            _isTetherMode = isBoar;
+            _isTetherMode = IsTetherCreature(beast);
 
             if (_isTetherMode)
             {

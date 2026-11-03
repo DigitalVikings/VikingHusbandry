@@ -4,6 +4,7 @@ using HarmonyLib;
 using UnityEngine;
 using VikingHusbandry.Configuration;
 using VikingHusbandry.Features.Commands;
+using VikingHusbandry.Features.Trough;
 
 namespace VikingHusbandry.Patches
 {
@@ -51,6 +52,18 @@ namespace VikingHusbandry.Patches
         public static void InheritStanceOnGrowup(Character young, Character adult)
         {
             if (young == null || adult == null) return;
+
+            // Carry over fattening feed count from youth
+            int feedCount = FatteningManager.GetFeedCount(young);
+            if (feedCount > 0)
+            {
+                ZNetView adultNview = adult.GetComponent<ZNetView>();
+                if (adultNview != null && adultNview.IsValid())
+                {
+                    adultNview.GetZDO().Set(FatteningManager.FeedCountHash, feedCount);
+                }
+            }
+
             if (!ModConfig.ModEnabled.Value || !ModConfig.EnableStances.Value) return;
 
             StanceType stance = CompanionStanceManager.GetStance(young);
@@ -59,7 +72,7 @@ namespace VikingHusbandry.Patches
             MonsterAI adultAI = adult.GetComponent<MonsterAI>();
             if (adultAI != null)
             {
-                MonsterAI youngAI = young.GetComponent<MonsterAI>();
+                MonsterAI? youngAI = young.GetComponent<MonsterAI>();
                 GameObject? followTarget = youngAI != null ? youngAI.GetFollowTarget() : null;
                 Player? followPlayer = followTarget != null ? followTarget.GetComponent<Player>() : null;
 
