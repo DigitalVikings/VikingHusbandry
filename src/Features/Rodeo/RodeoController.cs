@@ -12,6 +12,7 @@ namespace VikingHusbandry.Features.Rodeo
         private MonsterAI? _beastAI;
         private GameObject? _tempMountPoint;
         private GameObject? _lineObj;
+        private bool _isActive;
         private bool _isTetherMode;
         private float _rodeoTimer;
         private float _thrashTimer;
@@ -21,7 +22,7 @@ namespace VikingHusbandry.Features.Rodeo
         private float _basePitch;
         private float _buckImpulse;
 
-        public bool IsRodeoActive => _player != null && _beast != null;
+        public bool IsRodeoActive => _isActive && _player != null && _beast != null && !_player.IsDead() && !_beast.IsDead();
         public Player? ActivePlayer => _player;
 
         public static bool IsTetherCreature(Character character)
@@ -61,8 +62,20 @@ namespace VikingHusbandry.Features.Rodeo
             Instance!.Begin(player, beast);
         }
 
+        public static void HandleCharacterRemovedOrDead(Character? character)
+        {
+            if (Instance == null || !Instance._isActive) return;
+            if (character == null || character == Instance._beast || character == Instance._player)
+            {
+                Instance.EndRodeo(bucked: false, released: false);
+            }
+        }
+
         public void Begin(Player player, Character beast)
         {
+            if (player == null || beast == null || player.IsDead() || beast.IsDead()) return;
+
+            _isActive = true;
             _player = player;
             _beast = beast;
             _beastAI = beast.GetComponent<MonsterAI>();
@@ -165,10 +178,10 @@ namespace VikingHusbandry.Features.Rodeo
 
         private void Update()
         {
-            if (!IsRodeoActive || _player == null || _beast == null) return;
+            if (!_isActive) return;
 
-            // Check if player or beast died
-            if (_player.IsDead() || _beast.IsDead())
+            // Guard against dead or destroyed player/beast (Character.OnDeath destroys the creature's GameObject)
+            if (_player == null || _beast == null || _player.IsDead() || _beast.IsDead())
             {
                 EndRodeo(bucked: false, released: false);
                 return;
@@ -406,6 +419,11 @@ namespace VikingHusbandry.Features.Rodeo
 
             if (_lineObj != null)
             {
+                foreach (LineRenderer lr in _lineObj.GetComponentsInChildren<LineRenderer>(true))
+                {
+                    if (lr != null) lr.enabled = false;
+                }
+                _lineObj.SetActive(false);
                 if (ZNetScene.instance != null) ZNetScene.instance.Destroy(_lineObj);
                 else Destroy(_lineObj);
                 _lineObj = null;
@@ -417,6 +435,7 @@ namespace VikingHusbandry.Features.Rodeo
                 _tempMountPoint = null;
             }
 
+            _isActive = false;
             _player = null;
             _beast = null;
             _beastAI = null;
@@ -432,7 +451,7 @@ namespace VikingHusbandry.Features.Rodeo
 
         private void OnDestroy()
         {
-            if (IsRodeoActive)
+            if (_isActive || _lineObj != null || _tempMountPoint != null)
             {
                 EndRodeo(bucked: false, released: false);
             }

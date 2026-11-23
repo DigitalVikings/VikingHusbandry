@@ -50,7 +50,8 @@ namespace VikingHusbandry.Configuration
                 "EnableStances",
                 true,
                 "Enable cycling through 4 companion stances (Follow Aggressive, Follow Passive, Stay Guard, Stay Passive) on interaction.",
-                order: 90
+                order: 90,
+                isAdminOnly: true
             );
 
             AllowBoarCommands = Bind(
@@ -59,7 +60,8 @@ namespace VikingHusbandry.Configuration
                 "AllowBoarCommands",
                 true,
                 "Allow boars to be commanded like wolves and asksvin instead of only petted.",
-                order: 85
+                order: 85,
+                isAdminOnly: true
             );
 
             GuardLeashRadius = Bind(
@@ -68,7 +70,8 @@ namespace VikingHusbandry.Configuration
                 "GuardLeashRadius",
                 18.0f,
                 "Maximum distance (in meters) a guarding creature can pursue enemies before leashing back to its guard post.",
-                order: 80
+                order: 80,
+                isAdminOnly: true
             );
 
             EnableRodeoSubdual = Bind(
@@ -77,7 +80,8 @@ namespace VikingHusbandry.Configuration
                 "EnableRodeoSubdual",
                 true,
                 "Enable active rodeo subdual on staggered or unaware wild creatures.",
-                order: 70
+                order: 70,
+                isAdminOnly: true
             );
 
             RodeoStaminaDrain = Bind(
@@ -86,7 +90,8 @@ namespace VikingHusbandry.Configuration
                 "RodeoStaminaDrain",
                 10.0f,
                 "Player stamina drained per second while holding onto a thrashing beast.",
-                order: 65
+                order: 65,
+                isAdminOnly: true
             );
 
             RodeoDuration = Bind(
@@ -95,7 +100,8 @@ namespace VikingHusbandry.Configuration
                 "RodeoDuration",
                 10.0f,
                 "Total seconds of mounted struggle required to reach 100% subdual progress and down the beast.",
-                order: 60
+                order: 60,
+                isAdminOnly: true
             );
 
             BuckDamage = Bind(
@@ -104,7 +110,8 @@ namespace VikingHusbandry.Configuration
                 "BuckDamage",
                 5.0f,
                 "Blunt damage taken by the player when bucked off due to stamina exhaustion or releasing grip.",
-                order: 55
+                order: 55,
+                isAdminOnly: true
             );
 
             DownedDuration = Bind(
@@ -113,7 +120,8 @@ namespace VikingHusbandry.Configuration
                 "DownedDuration",
                 20.0f,
                 "Duration in seconds that the creature remains collapsed in the Downed state awaiting food.",
-                order: 50
+                order: 50,
+                isAdminOnly: true
             );
 
             EnableTroughs = Bind(
@@ -122,7 +130,8 @@ namespace VikingHusbandry.Configuration
                 "EnableTroughs",
                 true,
                 "Allow wooden chests to be toggled into Feeding Troughs via Alt + E.",
-                order: 40
+                order: 40,
+                isAdminOnly: true
             );
 
             ScentRadius = Bind(
@@ -131,7 +140,8 @@ namespace VikingHusbandry.Configuration
                 "ScentRadius",
                 20.0f,
                 "Radius (in meters) within which hungry livestock can detect food inside troughs or on the ground through fences.",
-                order: 35
+                order: 35,
+                isAdminOnly: true
             );
 
             AntiChuteHorizontalOnly = Bind(
@@ -140,7 +150,8 @@ namespace VikingHusbandry.Configuration
                 "AntiChuteHorizontalOnly",
                 true,
                 "Enforce procreation density checks using a 2D horizontal cylinder, preventing vertical breeding chute exploits.",
-                order: 30
+                order: 30,
+                isAdminOnly: true
             );
 
             PaddockRadius = Bind(
@@ -149,7 +160,8 @@ namespace VikingHusbandry.Configuration
                 "PaddockRadius",
                 20.0f,
                 "Horizontal radius (in meters) checked around troughs or breeding pairs for population capping.",
-                order: 25
+                order: 25,
+                isAdminOnly: true
             );
 
             EnableFattening = Bind(
@@ -158,7 +170,8 @@ namespace VikingHusbandry.Configuration
                 "EnableFattening",
                 true,
                 "Tamed animals gain fattening bonus when eating from feeding troughs, increasing item drop yield and drop chances upon slaughter.",
-                order: 20
+                order: 20,
+                isAdminOnly: true
             );
 
             MaxFattenBonus = Bind(
@@ -167,7 +180,8 @@ namespace VikingHusbandry.Configuration
                 "MaxFattenBonus",
                 1.0f,
                 "Maximum bonus loot multiplier from fattening (1.0 = +100% max extra drops / 2x yield with diminishing returns).",
-                order: 15
+                order: 15,
+                isAdminOnly: true
             );
 
             FatteningHalfLife = Bind(
@@ -176,7 +190,8 @@ namespace VikingHusbandry.Configuration
                 "FatteningHalfLife",
                 8.0f,
                 "Amount of trough food consumed required to reach ~63% of the maximum fattening bonus.",
-                order: 10
+                order: 10,
+                isAdminOnly: true
             );
 
             EnablePartnerStarInheritance = Bind(
@@ -185,7 +200,8 @@ namespace VikingHusbandry.Configuration
                 "EnablePartnerStarInheritance",
                 true,
                 "When breeding, offspring have a 50% chance to inherit the star level of the nearby partner creature instead of exclusively inheriting from the mother.",
-                order: 5
+                order: 5,
+                isAdminOnly: true
             );
         }
 

@@ -2,6 +2,15 @@
 
 All notable changes to **VikingHusbandry** will be documented in this file.
 
+## [0.2.4] - 2026-11-23
+
+### Changed
+- **Server-Authoritative Configs**: Marked balance and gameplay settings as server-authoritative (`AdminOnly`) for dedicated server parity.
+- **Trough Interaction Key**: Updated feeding trough toggle documentation to `Alt + E`.
+
+### Fixed
+- **Rodeo Dismount Cleanup**: Properly cleans up active rodeo grapple state if either the rider or target creature dies or despawns mid-rodeo.
+
 ## [0.2.3] - 2026-11-03
 
 ### Changed
